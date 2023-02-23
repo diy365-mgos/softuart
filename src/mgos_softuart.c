@@ -52,7 +52,7 @@ bool mg_softuart_rx_try_dispatch_ex(struct mg_softuart* uart, int64_t uptime, bo
       // append the received word to the buffer
       int8_t rx_data = uart->rx_word_data;
       mbuf_append(&uart->rx_buf, &rx_data, 1);
-      LOG(LL_INFO, ("RX RECEIVED %d", uart->rx_word_data));
+      LOG(LL_INFO, ("RX RECEIVED %ld", uart->rx_word_data));
 
       if (uart->dispatcher_cb) {
         uart->dispatcher_cb(uart, uart->dispatcher_data);
