@@ -146,8 +146,8 @@ mgos_softuart_t mgos_softuart_create(int rx_pin, enum mgos_gpio_pull_type rx_pin
                                      mg_softuart_rx_timer_cb, NULL);
     }
     bool gpio_ok = mgos_gpio_setup_input(uart->rx_pin, uart->rx_pin_pull);
-    bool handler_ok = mgos_gpio_set_int_handler(uart->rx_pin, MGOS_GPIO_INT_EDGE_ANY,
-                                                mgos_softuart_rx_int_handler, uart);
+    bool handler_ok = mgos_gpio_set_int_handler_isr(uart->rx_pin, MGOS_GPIO_INT_EDGE_ANY,
+                                                    mgos_softuart_rx_int_handler, uart);
     if ((s_rx_timer_id == MGOS_INVALID_TIMER_ID) || !gpio_ok || !handler_ok) {
       if (s_uarts_len == 0 && s_rx_timer_id != MGOS_INVALID_TIMER_ID) {
         mgos_clear_timer(s_rx_timer_id);
