@@ -114,13 +114,13 @@ mgos_softuart_t mgos_softuart_create(int rx_pin, enum mgos_gpio_pull_type rx_pin
                                      int tx_pin, struct mgos_uart_config* cfg) {
   if (!cfg) return NULL;
   if (s_uarts_len >= MG_SOFTUART_MAX_COUNT) return NULL;
-  if (uart->cfg.num_data_bits > 8) return NULL;
+  if (cfg->num_data_bits > 8) return NULL;
 
   struct mg_softuart* uart = calloc(1, sizeof(struct mg_softuart));
   if (!uart) return NULL;
   
   // copy the configuration
-  memcpy(uart->cfg, cfg, sizeof(*cfg));
+  memcpy(&uart->cfg, cfg, sizeof(*cfg));
   // set bit_duration (microseconds)
   uart->bit_duration_us = (1000000 / uart->cfg.baud_rate);
   // set word bit mask according word length (5-8 bits)
@@ -163,7 +163,7 @@ mgos_softuart_t mgos_softuart_create(int rx_pin, enum mgos_gpio_pull_type rx_pin
   uart->tx_pin = tx_pin;
   if (uart->tx_pin >= 0) {
     mbuf_init(&uart->tx_buf, uart->cfg.tx_buf_size);
-    if (!mgos_gpio_setup_output(uart->tx_pin, true);) {
+    if (!mgos_gpio_setup_output(uart->tx_pin, true)) {
       mbuf_free(&uart->tx_buf);
       free(uart);
       return NULL;
@@ -201,13 +201,13 @@ size_t mgos_softuart_read(mgos_softuart_t uart, void *buf, size_t len) {
 
 size_t mgos_softuart_read_mbuf(mgos_softuart_t uart, struct mbuf *mb, size_t len) {
   if (uart == NULL || !((struct mg_softuart *)uart)->rx_enabled) return 0;
-  size_t nr = MIN(len, mgos_uart_read_avail(uart));
+  size_t nr = MIN(len, mgos_softuart_read_avail(uart));
   if (nr > 0) {
     size_t free_bytes = mb->size - mb->len;
     if (free_bytes < nr) {
       mbuf_resize(mb, mb->len + nr);
     }
-    nr = mgos_uart_read(uart, mb->buf + mb->len, nr);
+    nr = mgos_softuart_read(uart, mb->buf + mb->len, nr);
     mb->len += nr;
   }
   return nr;
