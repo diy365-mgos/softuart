@@ -142,16 +142,22 @@ mgos_softuart_t mgos_softuart_create(int rx_pin, enum mgos_gpio_pull_type rx_pin
       s_rx_timer_id = mgos_set_timer(MG_SOFTUART_RX_TIMER_TIMEOUT, MGOS_TIMER_REPEAT,
                                      mg_softuart_rx_timer_cb, NULL);
     }
-    if ((s_rx_timer_id == MGOS_INVALID_TIMER_ID) ||
-        !mgos_gpio_setup_input(uart->rx_pin, uart->rx_pin_pull) ||
-        !mgos_gpio_set_int_handler(uart->rx_pin, MGOS_GPIO_INT_EDGE_ANY,
-                                   mgos_softuart_rx_int_handler, uart)) {
+    bool gpio_ok = mgos_gpio_setup_input(uart->rx_pin, uart->rx_pin_pull);
+    bool handler_ok = mgos_gpio_set_int_handler(uart->rx_pin, MGOS_GPIO_INT_EDGE_ANY,
+                                                mgos_softuart_rx_int_handler, uart)
+    if ((s_rx_timer_id == MGOS_INVALID_TIMER_ID) || !gpio_ok || !handler_ok) {
       if (s_uarts_len == 0 && s_rx_timer_id != MGOS_INVALID_TIMER_ID) {
         mgos_clear_timer(s_rx_timer_id);
         s_rx_timer_id = MGOS_INVALID_TIMER_ID;
       }
       mbuf_free(&uart->rx_buf);
       free(uart);
+      if (!gpio_ok)
+        LOG(LL_ERROR, ("Unable to set pin %d as RX", uart->tx_pin));
+      if (!handler_ok)
+        LOG(LL_ERROR, ("Unable to interrupt handler on pin %d", uart->tx_pin));
+      if (s_rx_timer_id == MGOS_INVALID_TIMER_ID)
+        LOG(LL_ERROR, ("Unable to start RX timer (every %dms)", MG_SOFTUART_RX_TIMER_TIMEOUT));
       return NULL;
     }
   } else {
@@ -166,11 +172,15 @@ mgos_softuart_t mgos_softuart_create(int rx_pin, enum mgos_gpio_pull_type rx_pin
     if (!mgos_gpio_setup_output(uart->tx_pin, true)) {
       mbuf_free(&uart->tx_buf);
       free(uart);
+      LOG(LL_ERROR, ("Unable to set pin %d as TX", uart->tx_pin));
       return NULL;
     }
   } else {
     mbuf_init(&uart->tx_buf, 0);
   }
+
+  LOG(LL_INFO, ("SOFT-UART %d successfully created (TX=%d, RX=%d)", 
+      s_uarts_len, uart->tx_pin, uart->rx_pin));
 
   s_uarts[s_uarts_len++] = uart;
   return uart;
