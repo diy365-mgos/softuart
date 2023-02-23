@@ -52,6 +52,7 @@ bool mg_softuart_rx_try_dispatch_ex(struct mg_softuart* uart, int64_t uptime, bo
       // append the received word to the buffer
       int8_t rx_data = uart->rx_word_data;
       mbuf_append(&uart->rx_buf, &rx_data, 1);
+      LOG(LL_INFO, ("RX %d", rx_data));
 
       if (uart->dispatcher_cb) {
         uart->dispatcher_cb(uart, uart->dispatcher_data);
@@ -60,6 +61,7 @@ bool mg_softuart_rx_try_dispatch_ex(struct mg_softuart* uart, int64_t uptime, bo
     } else {
       // something went wrong, and no STOP bit/s have been received,
       // so received bits must be abandoned.
+      LOG(LL_ERROR, ("RX ABORTED"));
       dispatched = false;
     }
 
@@ -101,6 +103,7 @@ void mgos_softuart_rx_int_handler(int pin, void *arg) {
       uart->rx_word_bit = 0;
       uart->rx_first_int_us = uptime;
       uart->rx_last_int_us = uptime;
+      LOG(LL_INFO, ("RX STARTED..."));
       return;
     }
   }
